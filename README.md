@@ -119,15 +119,38 @@ refuses anything else.
 **BIOS:** Secure Boot off. VT-d/VT-x can stay on (`DisableIoMapper` handles it). There is no CFG Lock,
 Resizable BAR or Above-4G option on this machine, and none is needed.
 
-**1. Build the EFI** with your own SMBIOS — never reuse someone else's:
+Two ready-made EFIs ship in [`dist/`](dist/):
+
+| | |
+|---|---|
+| `dist/EFI-install/EFI` | NootedGreen **off** — use this to install macOS |
+| `dist/EFI-accel/EFI` | NootedGreen **on**, accelerated — use after `install.sh` has run |
+
+Each has a single `config.plist`, so there is nothing to rename.
+
+**1. Two things you must do before booting either.**
 
 ```sh
-git clone <this repo> && cd <this repo>
-zsh make-efi-x1c.sh            # -> dist/EFI-X1C, with your own serial/MLB/UUID/ROM
+cd dist
+zsh set-smbios.sh <SERIAL> <MLB>        # writes your SMBIOS into BOTH EFIs
 ```
 
-That also downloads `HfsPlus.efi` from acidanthera/OcBinaryData, which is **not** in this repository
-(Apple-derived binary) and is needed for OpenCore to see a `createinstallmedia` USB.
+> ⚠️ **Set your own SMBIOS.** Both EFIs ship with it **blank**. Serial, MLB and UUID identify the machine
+> to Apple; if several people boot the same values, iCloud and iMessage break for all of them and Apple
+> IDs can get flagged. Generate yours with `macserial -m MacBookPro16,2 -g -n 1` from the OpenCore
+> release. Never publish them, never reuse someone else's.
+
+And fetch `HfsPlus.efi`, which is **not** in this repository (Apple-derived binary) but is needed for
+OpenCore to see a `createinstallmedia` USB:
+
+```sh
+curl -fL -o EFI-install/EFI/OC/Drivers/HfsPlus.efi \
+  https://raw.githubusercontent.com/acidanthera/OcBinaryData/master/Drivers/HfsPlus.efi
+cp EFI-install/EFI/OC/Drivers/HfsPlus.efi EFI-accel/EFI/OC/Drivers/HfsPlus.efi
+```
+
+`set-smbios.sh` prints that command too. If you would rather build from the template instead, run
+`zsh make-efi-x1c.sh`, which generates an SMBIOS and fetches `HfsPlus.efi` itself (output: `build/dist/`).
 
 **2. Make the installer USB** (on a Mac, with the 26.7.1 installer app downloaded):
 
@@ -135,16 +158,12 @@ That also downloads `HfsPlus.efi` from acidanthera/OcBinaryData, which is **not*
 sudo /Applications/Install\ macOS\ Tahoe.app/Contents/Resources/createinstallmedia --volume /Volumes/<USB>
 ```
 
-**3. Put the EFI on the USB's EFI partition.** Use `config-install.plist`, **not** `config.plist`: it is
-the same configuration with **NootedGreen disabled** and plain verbose boot-args, because there is no
-Tiger Lake driver in `/Library/Extensions` yet and nothing for it to patch.
+**3. Put `EFI-install` on the USB's EFI partition.**
 
 ```sh
 diskutil list                              # find the USB's EFI partition, e.g. disk4s1
 sudo diskutil mount disk4s1                # mounts as /Volumes/EFI
-sudo ditto dist/EFI-X1C /Volumes/EFI/EFI
-cd /Volumes/EFI/EFI/OC && sudo mv config.plist config-accel.plist \
-    && sudo mv config-install.plist config.plist && cd -
+sudo ditto dist/EFI-install/EFI /Volumes/EFI/EFI
 sudo find /Volumes/EFI -name '._*' -delete -o -name .DS_Store -delete
 sudo diskutil unmount /Volumes/EFI
 ```
@@ -162,14 +181,14 @@ xcode-select --install          # Command Line Tools, once
 zsh install.sh                  # downloads Apple's 16.0.32 bundles, builds, installs
 ```
 
-**6. Switch to the accelerated config** and use the NootedGreen you just built:
+**6. Switch to `EFI-accel`** and use the NootedGreen you just built:
 
 ```sh
 sudo diskutil mount disk0s1                # the INTERNAL ESP once macOS is installed
 sudo cp -R /Volumes/EFI/EFI "$HOME/EFI-backup-$(date +%F)"
-sudo cp -R build/NootedGreen.kext /Volumes/EFI/EFI/OC/Kexts/
-cd /Volumes/EFI/EFI/OC && sudo mv config.plist config-install.plist \
-    && sudo mv config-accel.plist config.plist && cd -
+sudo rm -rf /Volumes/EFI/EFI
+sudo ditto dist/EFI-accel/EFI /Volumes/EFI/EFI
+sudo cp -R build/NootedGreen.kext /Volumes/EFI/EFI/OC/Kexts/   # yours, built on this machine
 sudo find /Volumes/EFI -name '._*' -delete -o -name .DS_Store -delete
 ```
 
@@ -194,7 +213,7 @@ produce byte-identical output.
 names nothing:
 
 ```sh
-python3 -I verify-efi.py dist/EFI-X1C      # resolves every path the config references
+python3 -I verify-efi.py dist/EFI-accel/EFI    # resolves every path the config references
 ```
 
 ### Audio
@@ -300,8 +319,12 @@ is deliberate — the kernel-only arguments go last, because the kernel parses b
 EFI-X1C/                 the OpenCore EFI for THIS machine (serials blank — generate your own)
   config.plist             accelerated
   config-install.plist     NootedGreen off, for installing macOS
-EFI/                     upstream's EFI, for the Dell XPS 13 Plus 9320 — do NOT boot this on a ThinkPad
-make-efi-x1c.sh          builds dist/EFI-X1C with your SMBIOS + fetches HfsPlus.efi
+upstream-xps13/          upstream's Dell XPS 13 Plus EFI and builder, kept for attribution and
+                         diffing — it would NOT boot a ThinkPad (see its README for why)
+dist/EFI-install/EFI     ready to boot, NootedGreen off — for installing macOS
+dist/EFI-accel/EFI       ready to boot, accelerated — after install.sh has run
+dist/set-smbios.sh       writes your SMBIOS into both of the above
+make-efi-x1c.sh          alternative: build from the template into build/dist/, generating an SMBIOS
 verify-efi.py            checks every file a config references actually exists
 enable-input.py          toggle the trackpad stack (VoodooI2C + XOSI + the _OSI rename)
 set-layout-id.py         switch the AppleALC ALC287 layout-id

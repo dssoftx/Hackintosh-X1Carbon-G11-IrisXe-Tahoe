@@ -424,7 +424,7 @@
 				<key>BundlePath</key>
 				<string>NootedGreen.kext</string>
 				<key>Comment</key>
-				<string>OFF for installation: there is no Tiger Lake driver in /Library/Extensions yet</string>
+				<string>OFF for installation: no Tiger Lake driver in /Library/Extensions yet</string>
 				<key>Enabled</key>
 				<false/>
 				<key>ExecutablePath</key>
@@ -997,7 +997,7 @@
 				<key>Arguments</key>
 				<string></string>
 				<key>Comment</key>
-				<string>NOT included (Apple-derived binary). Fetch from acidanthera/OcBinaryData - needed to see a createinstallmedia USB.</string>
+				<string>NOT included (Apple-derived). make-efi-x1c.sh fetches it; needed to see a createinstallmedia USB.</string>
 				<key>Enabled</key>
 				<true/>
 				<key>HideVerbose</key>

@@ -16,7 +16,7 @@
 set -e
 ROOT=${0:A:h}
 OC_VER=1.0.8
-DEPS=$ROOT/build/deps; DIST=$ROOT/dist
+DEPS=$ROOT/build/deps; DIST=$ROOT/build/dist   # dist/ holds the ready-made EFIs; builds go under build/
 mkdir -p $DEPS $DIST
 
 MS=$DEPS/OpenCore-$OC_VER/Utilities/macserial/macserial
@@ -39,7 +39,6 @@ rm -f $DIST/EFI-X1C/EFI/README.md          # docs stay in the repo, not on the E
 # ditto DOES write ._ AppleDouble sidecars and .DS_Store onto a FAT32 ESP; strip them
 find $DIST/EFI-X1C -name '.DS_Store' -delete -o -name '._*' -delete
 cp $HFS $DIST/EFI-X1C/EFI/OC/Drivers/HfsPlus.efi
-cp $DIST/EFI-X1C/EFI/OC/config-install.plist $DIST/EFI-X1C/EFI/OC/config.plist
 
 line=$($MS -m MacBookPro16,2 -g -n 1)
 SERIAL=${${line%% |*}// /}; MLB=${${line##*| }// /}
@@ -66,7 +65,9 @@ EFI ready: $DIST/EFI-X1C/EFI   (zip: $DIST/EFI-X1C-G11.zip)
   Serial: $SERIAL   MLB: $MLB   UUID: $UUID
   Keep these: they are YOUR machine's. Do not publish dist/.
 
-config.plist and config-install.plist are the SAME bare stage-1 config, so the picker works either way.
+Two configs are produced, and BOTH carry your SMBIOS:
+  config.plist          accelerated (NootedGreen on) - use this once install.sh has run
+  config-install.plist  NootedGreen off - use this to INSTALL macOS (rename it to config.plist)
 
 Next:
   1. Make the installer USB on a Mac:

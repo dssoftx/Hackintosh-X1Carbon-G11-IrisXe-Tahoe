@@ -1,7 +1,6 @@
-> **This is upstream's README**, kept unchanged for attribution:
+> **This is upstream's README (pt-BR)**, kept unchanged for attribution:
 > [JulioNectar/Hackintosh-XPS13Plus-IrisXe-Tahoe](https://github.com/JulioNectar/Hackintosh-XPS13Plus-IrisXe-Tahoe)
-> (Dell XPS 13 Plus 9320, i7-1360P, 8086:A7A0). The ThinkPad X1 Carbon Gen 11 port is in
-> [README.md](README.md).
+> (Dell XPS 13 Plus 9320). The ThinkPad X1 Carbon Gen 11 port is in [README.md](README.md).
 
 # Aceleração da Iris Xe no macOS Tahoe — Dell XPS 13 Plus (9320)
 
