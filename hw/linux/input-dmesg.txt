@@ -1,0 +1,8 @@
+[    1.684353] input: ELAN067C:00 04F3:31F9 Mouse as /devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN067C:00/0018:04F3:31F9.0001/input/input6
+[    1.684467] input: ELAN067C:00 04F3:31F9 Touchpad as /devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN067C:00/0018:04F3:31F9.0001/input/input8
+[    1.685143] hid-generic 0018:04F3:31F9.0001: input,hidraw0: I2C HID v1.00 Mouse [ELAN067C:00 04F3:31F9] on i2c-ELAN067C:00
+[    1.753741] input: ELAN067C:00 04F3:31F9 Mouse as /devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN067C:00/0018:04F3:31F9.0001/input/input9
+[    1.754231] input: ELAN067C:00 04F3:31F9 Touchpad as /devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN067C:00/0018:04F3:31F9.0001/input/input11
+[    1.754851] hid-multitouch 0018:04F3:31F9.0001: input,hidraw0: I2C HID v1.00 Mouse [ELAN067C:00 04F3:31F9] on i2c-ELAN067C:00
+[    1.956869] psmouse serio1: trackpoint: Synaptics TrackPoint firmware: 0x01, buttons: 3/3
+[    1.970848] input: TPPS/2 Synaptics TrackPoint as /devices/platform/i8042/serio1/input/input5

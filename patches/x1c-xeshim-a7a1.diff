@@ -1,0 +1,13 @@
+diff --git a/tools/XeShim/Info.plist b/tools/XeShim/Info.plist
+index 85f1acf..b302d52 100644
+--- a/tools/XeShim/Info.plist
++++ b/tools/XeShim/Info.plist
+@@ -29,7 +29,7 @@
+ 			<key>IOMatchCategory</key>
+ 			<string>XeShim</string>
+ 			<key>IOPCIMatch</key>
+-			<string>0xa7a08086 0x9a498086</string>
++			<string>0xa7a08086 0xa7a18086 0x9a498086</string>
+ 			<key>IOProviderClass</key>
+ 			<string>IOPCIDevice</string>
+ 		</dict>

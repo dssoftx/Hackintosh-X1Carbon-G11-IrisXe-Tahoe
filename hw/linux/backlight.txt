@@ -1,0 +1,6 @@
+== intel_backlight
+  type = raw
+  max_brightness = 19393
+  brightness = 6310
+  actual_brightness = 6310
+  scale = unknown

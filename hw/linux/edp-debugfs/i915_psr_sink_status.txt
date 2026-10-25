@@ -1,0 +1,2 @@
+Sink PSR status: 0x2 [active, display from RFB]
+Sink PSR error status: 0x0

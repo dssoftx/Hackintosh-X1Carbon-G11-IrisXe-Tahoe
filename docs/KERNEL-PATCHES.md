@@ -1,0 +1,105 @@
+# Kernel patches (NootedGreen fork)
+
+All patches live in `src/NootedGreen/kern_gen11.cpp` and `kern_green.cpp`. They target Apple's
+**AppleIntelTGLGraphics 16.0.32** (kext bundle IDs renamed to `com.xxxxx.*`) and Tahoe's **IOAcceleratorFamily2**
+(build 25G241). Byte patches are `LookupPatchPlus` find/replace pairs, so they fail safely ("NAO encontrado" in the
+log) on a different driver build.
+
+The fixes below are active with the boot-args shipped in `EFI/OC/config.plist`:
+
+```
+IGLogLevel=3 -ngreentglwithgfx -allow3d -disablegfxfirmware ngreen-dmc=adlp
+-ngreenv189 -ngreenkeepefi -ngreenxefix -ngreenfixbootmode amfi_get_out_of_my_way=1 ngreenSched=4 ngreenV142=3
+ngreenblmax=17777 gfxrst=1
+```
+
+`gfxrst=1` is a WhateverGreen argument: it stops WEG's boot-framebuffer copy, which took ~18 s at 3840×2400 with
+OpenCore `Resolution=Max` (see XE-BOOTHOLD below and [EXPERIMENTS.md](EXPERIMENTS.md) #76).
+
+`-ngreenxefix` turns on the Raptor Lake / Tahoe fix set. Lilu truncates boot-args at about 228 characters, so keep the
+line short.
+
+**More detail.** This page lists the patches that matter for a working system. The full list — every `XE-*` patch
+including diagnostics and opt-in experiments, the upstream V-numbered patches, byte patterns and all boot-args — is in
+[CATALOG.md](CATALOG.md). **Version history:** the order in which these patches were found, with the evidence for each,
+is in [HISTORY.md](HISTORY.md) (phases 1–2 display, 9–16 scheduler/memory, 17–18 power and video, 26–28 hang
+recovery, image corruption and topology), and the patches that were tried and dropped are in
+[EXPERIMENTS.md](EXPERIMENTS.md).
+
+## Display (display engine 13)
+
+| Patch | Problem | Fix | Disable |
+|---|---|---|---|
+| DPT off / DBUF | Display 13 reads tiled planes through the DPT, and the TGL driver powers off DBUF slice S1 → noise on screen | `CHICKEN_MISC_2` bit 30, keep `DBUF_CTL_S1` power request | — |
+| GAMMA | TGL programs 10-bit post-CSC gamma in a layout display 13 reads wrong | `GAMMA_MODE_A = 0` (bypass) | — |
+| XE-FMT | `performTransaction` reads the frame format from `IOSurface+0xa4`; Tahoe moved it (now `+0x80`) → plane programmed as YUV 4:2:2 (green screen) | force `'BGRA'` | — |
+| fixbootmode | WindowServer aborted (no display mode / timings at start) | inject detailed timings early | `-ngreenfixbootmode` is opt-in |
+| XE-BLR | Brightness topped out at ~50 % | keep the hardware PWM period, rescale duty (`ngreenblmax`) | `-ngreennoblr` |
+| XE-BOOTHOLD (v4) | ~1 s of garbage at the first mode set: Apple re-declares the boot buffer X-tiled and WindowServer's first ring buffers are shown before they are drawn | from Apple's first tiled PLANE_CTL write, keep plane A and the backlight (`BLC_PWM_PCH_CTL1` bit 31) off until a PLANE_SURF address repeats (WindowServer's ring has wrapped) and at least `xebbms` ms (default 600) have passed; safety release after `xebbms`+900 ms. One-shot per boot. Also logs `XeNG BOOTDIAG` register snapshots | `-xenobb` |
+
+## Command submission (host scheduler, no GuC)
+
+The GuC firmware is disabled (`-disablegfxfirmware`), so the driver runs its host scheduler (`ngreenSched=4`).
+
+| Patch | Problem | Fix | Disable |
+|---|---|---|---|
+| CSB guard | "EL[0] was invalidated" panics: context-switch events for a context that was already replaced | skip CSB events whose context ID doesn't match | `-ngreennocsbguard` |
+| csbresync | WindowServer hang: CSB guard dropped a real active→idle event for a context still in the pending slot (finished before its idle→active was processed) → stuck stamp → watchdog | run the original `csbProcessIdleToActive` for that context, then let the event through | `-ngreennocsbresync` |
+| XE-IDLEBOUND | slow shutdown / watchdog panic: `IGScheduler5::waitForGpuIdle` waits up to 2.5 s each time on a GPU that never idles | after one wait ≥ 2 s, skip the waits of the next 30 s | `-ngreennoidlebound` |
+| SAMETAIL | the same context resubmitted with the same tail confused the execlist state | mark it as a lite restore | `-ngreennosametail` |
+| ELSQ idle wait | submissions while the ELSP was busy | wait up to 5 ms for idle | `-ngreennoelsqidle` |
+| XE-NOPOSH | RPL has no POSH pipe | clear the POSH bit in `MI_BATCH_BUFFER_START` | opt-in `-ngreennoposh` |
+| QUIET LOG | log flood and a Lilu log deadlock in interrupt context | events only with `-ngreenevlog` | — |
+| **XE-GPUREC** (v1) | a hang on the render or compute engine ended in a restart loop and a WindowServer watchdog panic: RCS and CCS share the render reset domain (GDRST bit 1), but Apple's `resetGraphicsEngine` restores and replays only the engine that hung, so the other came back with execlists off | route `resetGraphicsEngine`: snapshot both engines' register lists, restore the sibling's after Apple's reset and replay its scheduler reset too; byte signatures checked first; counters `xe-rec-*` | `-ngreennogpurec` |
+| **XE-GPUREC v2** | after v1 the screen still froze: the render-domain reset also clears `RCU_MODE` (0x14800) bit 0, the CCS enable, which Apple writes only at boot/wake, so WindowServer's compute channels never completed | route `processGPUReset`: re-enable the compute engine (`RCU_MODE`, CCS `FORCE_TO_NONPRIV0`, `0xce90`, CCS IMR/HWSTAM) right after the reset, before Apple's replay. Confirmed 2026-10-24 (three real hangs, screen kept running); ioreg `xe-rec-exfix`, `xe-rec-rcu` | `-ngreennogpurecex` (v2 only) |
+
+## Memory and resources
+
+| Patch | Problem | Fix | Disable |
+|---|---|---|---|
+| BLITSCRATCH2 | Blit3D kernels read a zeroed scratch area (Tahoe changed `lockForCPUAccess`) | write the scratch through the GPU-visible mapping | `-ngreennoblitscratch` |
+| XE-POOL2 | small command buffer pools | larger buffers for small pools | `-ngreennopoolfix` |
+| PAGEON GUARD | GP faults on non-canonical pointers when pages are wired back | validate the pointer first | `-ngreennopageonguard` |
+| XE-RESFREE | `kfree` panic in `IGAccelResource::free` (per-plane table with garbage pointers) | neutralize unmapped pointers before freeing | `-ngreennoresfree` |
+| XE-NOORPHAN | "corrupt list" panic in `IOAccelSysMemory::unorphanIt` (orphaned memory reuse) | `IOAccelOrphanedMemoryPool::getMemory` returns nothing → always allocate | `-ngreenorphanreuse` |
+| **PLANES2** | Tahoe moved `IOSurface` plane count from `+0xb0` to `+0x98`; the old workaround treated every surface as 1-plane → **YUV/HEIC chroma read as zero: green wallpapers, blank video frames** | read `[IOSurface+0x98]` | `-ngreenplanesxor` (old behaviour) |
+
+## Render compression (disabled)
+
+Gen12 render compression needs the AUX translation table, which the TGL driver doesn't set up on RPL.
+
+| Patch | Fix | Disable |
+|---|---|---|
+| XE-NOCCS | `RenderCompressionMode=0`, `AllowIOSurfaceRenderCompression=0` | — |
+| XE-NOAUX | `fillSurfaceStateAuxInfo` always writes AUX = none | `-ngreenccs` |
+| XE-NOCCS3 | `IntelAccelerator::submitCCSResolve` returns immediately (wrote into a pool buffer Tahoe doesn't have → page fault) | — |
+| XE-NODEPTH | same for `IntelAccelerator::submitDepthResolve` (`resolve_hiz_g7` page fault) | `-ngreendepthresolve` |
+| **XE-RCPOLICY** | IntelAccelerator+0x1474 (`renderCompression` display/IOSurface policy) is set to 1 by the framebuffer whenever only the internal panel is connected; then IOSurfaces reserve CCS space and flips may keep compressed scanout although AUX is NONE here. Forced to 0 (startup store and the `callPlatformFunction("renderCompression")` setter), so flips take the "render compression off" path. Stays 0 across `xe-res` mode switches (small cosmetic glitch during the switch). From WhateverXe (jkbuha) | `-ngreennorc` |
+
+## Power and video
+
+| Patch | Problem | Fix | Disable |
+|---|---|---|---|
+| **XE-GVAID** | with `-ngreengva` the TGL personality advertises IOVARendererID 0x1080040, but the TGL VA plugin identifies as 0x1080080 (the ICL id) and AppleGVA only knows that one | set IOVARendererID = 0x1080080 when the GVA keys are kept | (only with `-ngreengva`) |
+| **VADIAG** | hardware decode returned empty frames and the cause was hidden in the kext | log-only hook on `IGAccelVideoContext::bind_resource`: logs the first 48 failures with the reason (lookup, bindResource/prepare, `get_tex_data` pitch 0). It found the sideband payload-header bug fixed in `macos/vadriver/patch_payloadhdr.py` | `-ngreennovadiag` |
+| **gvaboard** | NootedGreen inherited NootedRed's iMacPro1,1 `hwgva-id` for AppleGVA; on that board-id AppleGVA only accepts AMD plugins | `hwgva-id` = the real board-id (Mac-5F9802EFE386AA28, MacBookPro16,2) | — |
+| **XE-BLITALIGN** | IOSurface planes whose offset is not a multiple of 64 (CoreVideo's 420v uses 32 / 2073632) read as zeros and lost writes: the copy between the IOSurface and the driver's device cache was routed to the 3D blit, which does not work here | `blit2d_common_supported`: address mask `0x3f`→`0x0f` (source and destination); large non-fast linear copies go to `blt2d_source_copy` (copy engine) instead of 3D **only when the source or destination is not 64-byte aligned** (v2; v1 rerouted every large copy and made Chrome icons disappear) | `-ngreennoblitalign` |
+| **XE-BLITFIX** | IOSurface copies with a row pitch that is not a multiple of 64 bytes and larger than 128 KB still went to the broken 3D blit → the GPU read zeros (green YUV / black RGB images: Apple Music artwork, some JPEGs; #6) | in the BLITALIGN v2 block of `submitBlit`: copies with `(srcPitch\|dstPitch) & 0x3f` go to `blt2d_source_copy` (XY_SRC_COPY_BLT, copy engine); 64-aligned copies unchanged. ioreg `xe-blitfix-*` | `-ngreennoblitfix` |
+| **XE-PAGESYNC** | `pageon`/`pageoff` copies run on the copy engine and the render/compute work did not wait for them (our `barrierSubmission` replacement skips Apple's cross-engine semaphore) → half-copied textures, mixed write-backs, flicker | after `IGAccelResource::pageon`/`pageoff`, CPU-wait the copy's event with `IOAccelEventMachineFast2::finishEvent` | `-ngreennopagesync` |
+| **XE-FBDPMS** | display sleep tore down pipe A, TRANS_DDI_FUNC_CTL_A, DDI_BUF_CTL_A and the scaler; wake re-enabled the panel and plane but never the eDP link → display stayed dark | `setFramebufferPowerState` on FB0: Wake→Doze/Sleep only clears `BLC_CTL` bit 31; back to Wake only sets it | `-ngreenfbdpms` |
+| **XE-RC6FW** | a leaked/unbalanced `SafeForceWake` kept forcewake held forever: GPU never in RC6 when idle (RC6 0 %, GT ~5 W) | route `IntelAccelerator::SafeForceWake`: same algorithm with the count clamped at 0; a held context is released after `ngreenfwidle` ms (default 500) of idle engines. Measured RC6 87.5 %, GT 1.4 W | `-ngreennorc6fw` (`-ngreenrc6fwnodrop`: no idle release) |
+| **XE-GTFREQ** | without GuC the frequency policy object returns 0 → GPU stuck at 100 MHz (RPn) | `setGTFrequencyMMIO` never requests less than `ngreengtfreq` MHz (default 1500 = RP0; under load the PCU grants ~1300 because of the PL4/IccMax package limit). Idle GPU still enters RC6 | `ngreengtfreq=0` |
+| **XE-NOGVA** | the TGL personality advertises hardware video decode (`IOGVACodec`, HEVC caps). Without the patched VA plugin the decoder can't be created and decode sessions that request an output format fail with `-6680` → YouTube "an error occurred" | remove the `IOGVA*` properties → VideoToolbox uses software decode. Boot with `-ngreengva` once the patched plugin (`macos/vadriver/`) is installed: H.264 then decodes on the GPU. HEVC additionally needs `IOGVAHEVCDecode` = "2" on the accelerator, set by XE-GVAHEVC with `-ngreengva` (confirmed 2026-10-21). `-ngreengva` breaks FairPlay (Apple Music, #11) | `-ngreengva` |
+
+## GPU topology (80 EU parts)
+
+| Patch | Problem | Fix | Boot-args |
+|---|---|---|---|
+| **XE-TOPO** | NootedGreen hard-codes the 96 EU topology (12 subslices × 8 EU, 8 L3 banks); 80 EU chips (i5-1340P, i5-1334U) showed rendering artifacts (#3, #4) | the RPL `NumSubSlices` / `L3BankCount` byte-patch immediates and the `getGPUInfo` values come from boot-args; without them nothing changes. ioreg `xe-topo` = EU<<8 \| L3 | `ngreen-eu=80` (or 48/64/96), `ngreen-l3=N` (even, 2–16). **80 EU parts: `ngreen-eu=80 ngreen-l3=6`** (confirmed by two users; with L3 left at 8 the artifacts stay) |
+
+## Tahoe facts used by these patches (25G241)
+
+- `IOSurface::getPlaneCount()` → `[rdi+0x98]`, `IOSurface::getPixelFormat()` → `[rdi+0x80]`.
+- `IOAccelResource2`: parent resource `+0xe0`, plane index `+0xf8`, plane offset `+0xfc`.
+- Symbols of kexts inside the kernel collection can be listed with `tools/diagnostics/kcsyms.py` and disassembled
+  with `kcdis.py` (needs `pip install --user capstone`).

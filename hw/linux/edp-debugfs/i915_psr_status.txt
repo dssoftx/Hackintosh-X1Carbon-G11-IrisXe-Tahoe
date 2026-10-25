@@ -1,0 +1,7 @@
+Sink support: PSR = yes [0x03], Panel Replay = no, Panel Replay Selective Update = no, Panel Replay DSC support = not supported
+PSR mode: PSR2 enabled
+Source PSR/PanelReplay ctl: enabled [0x80004a99]
+Source PSR/PanelReplay status: SLEEP [0x30000510]
+Busy frontbuffer bits: 0x00000000
+Performance counter: 0
+PSR2 selective fetch: enabled

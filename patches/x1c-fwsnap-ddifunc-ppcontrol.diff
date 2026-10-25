@@ -1,0 +1,78 @@
+diff --git a/src/NootedGreen/kern_gen11.cpp b/src/NootedGreen/kern_gen11.cpp
+index 6b26f0c..e3b34c0 100755
+--- a/src/NootedGreen/kern_gen11.cpp
++++ b/src/NootedGreen/kern_gen11.cpp
+@@ -20,6 +20,36 @@ static volatile uint32_t gXeResFreeFix = 0;  // XE-RESFREE: entradas inválidas
+ extern volatile uint32_t gXeOrphanMiss;  // XE-NOORPHAN (kern_green.cpp)
+ extern bool gXeLockRouted;
+ 
++// ─── XE-FWSNAP (X1C, 25/10): registradores treinados pelo firmware, lidos UMA vez antes de qualquer escrita ──────
++// Dois valores do upstream eram literais do painel do autor (2560x1600, 4 faixas) e do XPS, e quebram outro painel:
++//   kern_gen11.cpp:hwSetMode gravava TRANS_DDI_FUNC_CTL_A = 0x8A000106 (DDI-A, DP SST, 8bpc, 4 FAIXAS) em todo
++//   modeset; o X1 Carbon Gen 11 treina o eDP com 2 faixas (valor vivo 0x8a010002, hw/linux/intel_reg.txt). Gravar
++//   4 faixas num transcoder ligado reinicia o buffer DDI e derruba o link (o próprio upstream avisa disso em
++//   hwInitializeCState). E adlpDcExit gravava PP_CONTROL = 0x67 em toda saída de DC, apagando o bit 3
++//   (EDP_BLC_ENABLE) que o firmware deste aparelho liga (valor vivo 0x6f) — 1122 transições DC5->DC6 em minutos.
++// Agora os dois valores vêm do hardware. No XPS a captura devolve exatamente os literais antigos, então o
++// comportamento lá não muda. Override: ngreenddifunc=0xVALOR. Veja docs/X1C-G11-PORT.md (c1, c4).
++static uint32_t gXeFwDdiFuncA = 0;   // TRANS_DDI_FUNC_CTL_A (0x60400)
++static uint32_t gXeFwPpControl = 0;  // PP_CONTROL          (0xC7204)
++static void xeFwSnapshot() {
++	if (!NGreen::callback || NGreen::callback->getIsRealTGL()) return;  // acessor público (kern_green.hpp:285)
++	if (!gXeFwDdiFuncA) {
++		uint32_t v = NGreen::callback->readReg32(0x60400);
++		if (v & 0x80000000u) {   // só aceita um transcoder já ligado pelo firmware
++			gXeFwDdiFuncA = v;
++			SYSLOG("ngreen", "XE-FWSNAP: TRANS_DDI_FUNC_CTL_A=0x%x (faixas=%u, porta=%u)", v,
++				   ((v >> 1) & 0x7u) + 1, ((v >> 27) & 0xfu));
++		}
++	}
++	if (!gXeFwPpControl) {
++		uint32_t v = NGreen::callback->readReg32(0xC7204);
++		if (v) {
++			gXeFwPpControl = v;
++			SYSLOG("ngreen", "XE-FWSNAP: PP_CONTROL=0x%x (BLC_ENABLE=%u)", v, (v >> 3) & 1u);
++		}
++	}
++}
++
+ // ─── xe/topo4/5 (24/10): topologia escolhida por boot-arg, sem ler fusíveis ──────────────────────────────────────
+ // topo/topo2/topo3 liam os fusíveis no boot e todos travaram o boot (23/10), mesmo calculando 96 EU aqui. Agora o
+ // layout só muda com ngreen-eu=80 (ou 64/48) e, opcional, ngreen-l3=N. Sem os args: 12 SS × 8 EU, L3 8, como antes.
+@@ -4528,6 +4558,8 @@ void Gen11::hwInitializeCState(AppleIntel::AppleIntelBaseController *that)
+ {
+ 	SYSLOG("ngreen", "NB-BUILD-V50-ALLOW-METAL");
+ 
++	xeFwSnapshot();   // XE-FWSNAP: antes de qualquer escrita nossa ou da Apple
++
+ 	int origB48 = getMember<int>(that, 0xB48);
+ 	int origCE4 = getMember<int>(that, 0xCE4);
+ 	SYSLOG("ngreen", "hwInitCState B48=%d CE4=%d", origB48, origCE4);
+@@ -4879,7 +4911,8 @@ void NGreen::adlpDcExit(const char *caller) {
+ 	writeReg32(0x8F03C, 0xC003B300u);
+ 	writeReg32(0x8F00C, 0x571056C0u);
+ 	// 4. Restore panel power sequencer.
+-	writeReg32(0xC7204, 0x67u);  // PP_CONTROL
++	// XE-FWSNAP (audit c4): 0x67 limpa o bit 3 (EDP_BLC_ENABLE), que o firmware do X1C liga (0x6f).
++	writeReg32(0xC7204, gXeFwPpControl ? gXeFwPpControl : 0x67u);  // PP_CONTROL
+ 	// 5. Disable PSR — DMC may have re-enabled it on DC exit.
+ 	writeReg32(0x60800, 0u);   // EDP_PSR_CTL (TGL)
+ 	writeReg32(0x60A10, 0u);   // EDP_PSR2_CTL (TGL)
+@@ -11733,8 +11766,15 @@ int Gen11::hwSetMode
+ 	// (2-lane DP SST). Write the correct value NOW so paramsFbCompare sees no lane-count change
+ 	// needed and leaves DDI_BUF_CTL_A alone — preserving the UEFI-trained 4-lane eDP link.
+ 	if (!NGreen::callback->isRealTGL) {
+-		NGreen::callback->writeReg32(0x60400, 0x8A000106);  // TRANS_DDI_FUNC_CTL_A
+-		DBGLOG("ngreen", "hwSetMode: pre-write TRANS_DDI_FUNC_CTL_A=0x8A000106 to prevent paramsFbCompare lane reprog");
++		// XE-FWSNAP (audit c1): o valor treinado pelo firmware, não o literal de 4 faixas do upstream.
++		static int ddiArg = -1;
++		static uint32_t ddiOv = 0;
++		if (ddiArg < 0) { ddiArg = 0; if (PE_parse_boot_argn("ngreenddifunc", &ddiOv, sizeof(ddiOv)) && ddiOv) ddiArg = 1; }
++		xeFwSnapshot();
++		uint32_t v = ddiArg == 1 ? ddiOv : (gXeFwDdiFuncA ? gXeFwDdiFuncA : 0x8A000106u);
++		NGreen::callback->writeReg32(0x60400, v);
++		DBGLOG("ngreen", "hwSetMode: pre-write TRANS_DDI_FUNC_CTL_A=0x%x (%s) to prevent paramsFbCompare lane reprog",
++			   v, ddiArg == 1 ? "boot-arg" : (gXeFwDdiFuncA ? "firmware" : "fallback"));
+ 	}
+ 	auto ret= FunctionCast(hwSetMode, callback->ohwSetMode)(that, param_1, param_2, param_3);
+ 	if (hw)

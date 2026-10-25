@@ -1,0 +1,3 @@
+$ cat /proc/asound/cards
+ 0 [sofhdadsp      ]: sof-hda-dsp - sof-hda-dsp
+                      LENOVO-21HM0049MZ-ThinkPadX1CarbonGen11

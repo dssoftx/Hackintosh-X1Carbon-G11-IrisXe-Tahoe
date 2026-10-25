@@ -1,0 +1,6 @@
+DSC_Enabled: no
+DSC_Sink_Support: no
+DSC_Output_Format_Sink_Support: RGB: no YCBCR420: no YCBCR444: no
+DSC_Sink_BPP_Precision: 16
+DSC_Sink_Max_Slice_Count: 0
+Force_DSC_Enable: no

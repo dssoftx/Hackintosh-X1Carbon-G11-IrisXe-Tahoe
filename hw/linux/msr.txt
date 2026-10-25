@@ -1,0 +1,4 @@
+MSR 0xE2 (MSR_POWER_CTL / PKG_CST_CONFIG_CONTROL):
+  raw = 74008008
+  bit15 set => MSR 0xE2 is LOCKED => AppleXcpmCfgLock=true is required
+MSR 0x1AA (MISC_PWR_MGMT): 30c2

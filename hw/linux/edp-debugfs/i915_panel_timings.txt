@@ -1,0 +1,5 @@
+Panel power up delay: 200
+Panel power down delay: 50
+Panel power cycle delay: 500
+Backlight on delay: 1
+Backlight off delay: 260

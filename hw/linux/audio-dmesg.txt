@@ -1,0 +1,40 @@
+[    0.043105] software IO TLB: area num 16.
+[    0.820613] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.961763] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    0.961765] software IO TLB: mapped [mem 0x000000008a24e000-0x000000008e24e000] (64MB)
+[    0.993665] acpi-fan PNP0C0B:00: Using Microsoft fan extensions
+[    1.183734] integrity: Loaded X.509 cert 'Microsoft Windows Production PCA 2011: a92902398e16c49778cd90f99e4f9ae17c55af53'
+[    3.938976] ISO 9660 Extensions: Microsoft Joliet Level 3
+[   12.758718] ISO 9660 Extensions: Microsoft Joliet Level 3
+[   31.771076] snd_soc_avs 0000:00:1f.3: Digital mics found on Skylake+ platform, using SOF driver
+[   32.081766] sof-audio-pci-intel-tgl 0000:00:1f.3: DSP detected with PCI class/subclass/prog-if 0x040380
+[   33.095816] sof-audio-pci-intel-tgl 0000:00:1f.3: bound 0000:00:02.0 (ops intel_audio_component_bind_ops [i915])
+[   33.103587] sof-audio-pci-intel-tgl 0000:00:1f.3: use msi interrupt mode
+[   33.264452] sof-audio-pci-intel-tgl 0000:00:1f.3: hda codecs found, mask 5
+[   33.264465] sof-audio-pci-intel-tgl 0000:00:1f.3: using HDA machine driver skl_hda_dsp_generic now
+[   33.264469] sof-audio-pci-intel-tgl 0000:00:1f.3: NHLT device BT(0) detected, ssp_mask 0x4
+[   33.264473] sof-audio-pci-intel-tgl 0000:00:1f.3: BT link detected in NHLT tables: 0x4
+[   33.264478] sof-audio-pci-intel-tgl 0000:00:1f.3: DMICs detected in NHLT tables: 4
+[   33.584748] sof-audio-pci-intel-tgl 0000:00:1f.3: Firmware paths/files for ipc type 0:
+[   33.584754] sof-audio-pci-intel-tgl 0000:00:1f.3:  Firmware file:     intel/sof/sof-rpl.ri
+[   33.584756] sof-audio-pci-intel-tgl 0000:00:1f.3:  Topology file:     intel/sof-tplg/sof-hda-generic-4ch.tplg
+[   33.585243] sof-audio-pci-intel-tgl 0000:00:1f.3: Firmware info: version 2:2:0-57864
+[   33.585246] sof-audio-pci-intel-tgl 0000:00:1f.3: Firmware: ABI 3:22:1 Kernel ABI 3:23:1
+[   33.700822] sof-audio-pci-intel-tgl 0000:00:1f.3: Firmware info: version 2:2:0-57864
+[   33.700828] sof-audio-pci-intel-tgl 0000:00:1f.3: Firmware: ABI 3:22:1 Kernel ABI 3:23:1
+[   34.075455] sof-audio-pci-intel-tgl 0000:00:1f.3: loading topology: intel/sof-tplg/sof-hda-generic-4ch.tplg
+[   34.075515] sof-audio-pci-intel-tgl 0000:00:1f.3: Topology: ABI 3:22:1 Kernel ABI 3:23:1
+[   34.075704] skl_hda_dsp_generic skl_hda_dsp_generic: ASoC: Parent card not yet available, widget card binding deferred
+[   34.096162] snd_hda_codec_alc269 ehdaudio0D0: ALC287: picked fixup  (pin match)
+[   34.096782] snd_hda_codec_alc269 ehdaudio0D0: autoconfig for ALC287: line_outs=2 (0x14/0x17/0x0/0x0/0x0) type:speaker
+[   34.096787] snd_hda_codec_alc269 ehdaudio0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[   34.096789] snd_hda_codec_alc269 ehdaudio0D0:    hp_outs=1 (0x21/0x0/0x0/0x0/0x0)
+[   34.096791] snd_hda_codec_alc269 ehdaudio0D0:    mono: mono_out=0x0
+[   34.096793] snd_hda_codec_alc269 ehdaudio0D0:    inputs:
+[   34.096794] snd_hda_codec_alc269 ehdaudio0D0:      Mic=0x19
+[   34.138252] skl_hda_dsp_generic skl_hda_dsp_generic: hda_dsp_hdmi_build_controls: no PCM in topology for HDMI converter 3
+[   34.157147] input: sof-hda-dsp Mic as /devices/pci0000:00/0000:00:1f.3/skl_hda_dsp_generic/sound/card0/input15
+[   34.157224] input: sof-hda-dsp Headphone as /devices/pci0000:00/0000:00:1f.3/skl_hda_dsp_generic/sound/card0/input16
+[   34.157273] input: sof-hda-dsp HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:1f.3/skl_hda_dsp_generic/sound/card0/input17
+[   34.157318] input: sof-hda-dsp HDMI/DP,pcm=4 as /devices/pci0000:00/0000:00:1f.3/skl_hda_dsp_generic/sound/card0/input18
+[   34.157375] input: sof-hda-dsp HDMI/DP,pcm=5 as /devices/pci0000:00/0000:00:1f.3/skl_hda_dsp_generic/sound/card0/input19

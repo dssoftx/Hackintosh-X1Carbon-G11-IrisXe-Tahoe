@@ -1,0 +1,60 @@
+$ ls -l /sys/bus/i2c/devices/
+total 0
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-0 -> ../../../devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-1 -> ../../../devices/pci0000:00/0000:00:19.0/i2c_designware.1/i2c-1
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-10 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-10
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-11 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-11
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-12 -> ../../../devices/pci0000:00/0000:00:02.0/drm/card1/card1-eDP-1/i2c-12
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-13 -> ../../../devices/pci0000:00/0000:00:02.0/drm/card1/card1-DP-1/i2c-13
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-14 -> ../../../devices/pci0000:00/0000:00:02.0/drm/card1/card1-DP-2/i2c-14
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-15 -> ../../../devices/pci0000:00/0000:00:02.0/drm/card1/card1-DP-3/i2c-15
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-16 -> ../../../devices/pci0000:00/0000:00:02.0/drm/card1/card1-DP-4/i2c-16
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-2 -> ../../../devices/pci0000:00/0000:00:1f.4/i2c-2
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-3 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-3
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-4 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-4
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-5 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-5
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-6 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-6
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-7 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-7
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-8 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-8
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-9 -> ../../../devices/pci0000:00/0000:00:02.0/i2c-9
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-ELAN067C:00 -> ../../../devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-0/i2c-ELAN067C:00
+lrwxrwxrwx 1 root root 0 Oct 24  2026 i2c-NXP1001:00 -> ../../../devices/pci0000:00/0000:00:19.0/i2c_designware.1/i2c-1/i2c-NXP1001:00
+
+/sys/bus/i2c/devices/i2c-0/name -> Synopsys DesignWare I2C adapter
+/sys/bus/i2c/devices/i2c-1/name -> Synopsys DesignWare I2C adapter
+/sys/bus/i2c/devices/i2c-10/name -> i915 gmbus tc5
+/sys/bus/i2c/devices/i2c-11/name -> i915 gmbus tc6
+/sys/bus/i2c/devices/i2c-12/name -> AUX A/DDI A/PHY A
+/sys/bus/i2c/devices/i2c-13/name -> AUX USBC1/DDI TC1/PHY TC1
+/sys/bus/i2c/devices/i2c-14/name -> AUX USBC2/DDI TC2/PHY TC2
+/sys/bus/i2c/devices/i2c-15/name -> AUX USBC3/DDI TC3/PHY TC3
+/sys/bus/i2c/devices/i2c-16/name -> AUX USBC4/DDI TC4/PHY TC4
+/sys/bus/i2c/devices/i2c-2/name -> SMBus I801 adapter at 0000:00:1f.4
+/sys/bus/i2c/devices/i2c-3/name -> i915 gmbus dpa
+/sys/bus/i2c/devices/i2c-4/name -> i915 gmbus dpb
+/sys/bus/i2c/devices/i2c-5/name -> i915 gmbus dpc
+/sys/bus/i2c/devices/i2c-6/name -> i915 gmbus tc1
+/sys/bus/i2c/devices/i2c-7/name -> i915 gmbus tc2
+/sys/bus/i2c/devices/i2c-8/name -> i915 gmbus tc3
+/sys/bus/i2c/devices/i2c-9/name -> i915 gmbus tc4
+/sys/bus/i2c/devices/i2c-ELAN067C:00/name -> ELAN067C:00
+/sys/bus/i2c/devices/i2c-NXP1001:00/name -> NXP1001:00
+/sys/bus/i2c/devices/i2c-0/name -> Synopsys DesignWare I2C adapter
+/sys/bus/i2c/devices/i2c-1/name -> Synopsys DesignWare I2C adapter
+/sys/bus/i2c/devices/i2c-10/name -> i915 gmbus tc5
+/sys/bus/i2c/devices/i2c-11/name -> i915 gmbus tc6
+/sys/bus/i2c/devices/i2c-12/name -> AUX A/DDI A/PHY A
+/sys/bus/i2c/devices/i2c-13/name -> AUX USBC1/DDI TC1/PHY TC1
+/sys/bus/i2c/devices/i2c-14/name -> AUX USBC2/DDI TC2/PHY TC2
+/sys/bus/i2c/devices/i2c-15/name -> AUX USBC3/DDI TC3/PHY TC3
+/sys/bus/i2c/devices/i2c-16/name -> AUX USBC4/DDI TC4/PHY TC4
+/sys/bus/i2c/devices/i2c-2/name -> SMBus I801 adapter at 0000:00:1f.4
+/sys/bus/i2c/devices/i2c-3/name -> i915 gmbus dpa
+/sys/bus/i2c/devices/i2c-4/name -> i915 gmbus dpb
+/sys/bus/i2c/devices/i2c-5/name -> i915 gmbus dpc
+/sys/bus/i2c/devices/i2c-6/name -> i915 gmbus tc1
+/sys/bus/i2c/devices/i2c-7/name -> i915 gmbus tc2
+/sys/bus/i2c/devices/i2c-8/name -> i915 gmbus tc3
+/sys/bus/i2c/devices/i2c-9/name -> i915 gmbus tc4
+/sys/bus/i2c/devices/i2c-ELAN067C:00/name -> ELAN067C:00
+/sys/bus/i2c/devices/i2c-NXP1001:00/name -> NXP1001:00
