@@ -24,7 +24,7 @@ else
 fi
 
 n=0
-for c in $HERE/EFI-install/EFI/OC/config.plist $HERE/EFI-accel/EFI/OC/config.plist; do
+for c in $HERE/EFI-stage1/OC/config.plist $HERE/EFI-PostInstall/OC/config.plist; do
   [[ -f $c ]] || continue
   plutil -replace PlatformInfo.Generic.SystemProductName  -string MacBookPro16,2 $c
   plutil -replace PlatformInfo.Generic.SystemSerialNumber -string $SERIAL        $c
@@ -32,18 +32,25 @@ for c in $HERE/EFI-install/EFI/OC/config.plist $HERE/EFI-accel/EFI/OC/config.pli
   plutil -replace PlatformInfo.Generic.SystemUUID         -string $UUID          $c
   plutil -replace PlatformInfo.Generic.ROM                -data   $ROM           $c
   plutil -lint $c >/dev/null
+  # if HfsPlus.efi has been fetched, enable it; an enabled-but-missing driver halts OpenCore
+  [[ -f $HERE/../tools/sync-hfsplus.py ]] && python3 -I $HERE/../tools/sync-hfsplus.py $c
   print "  updated $c"
-  ((n++))
+  n=$((n+1))
 done
 (( n )) || { print "no config.plist found - run this from inside dist/"; exit 1 }
 
 print
 print "Serial: $SERIAL   MLB: $MLB   UUID: $UUID"
 print "Keep these. Do not publish them, and do not reuse anyone else's."
+if [[ -s $HERE/EFI-stage1/OC/Drivers/HfsPlus.efi && -s $HERE/EFI-PostInstall/OC/Drivers/HfsPlus.efi ]]; then
+  print
+  print "HfsPlus.efi is present in both. Nothing else to do."
+  exit 0
+fi
 print
-print "Still missing from both EFIs: OC/Drivers/HfsPlus.efi (Apple-derived, not redistributable)."
+print "Still missing: OC/Drivers/HfsPlus.efi (Apple-derived, not redistributable)."
 print "Fetch it once:"
-print "    curl -fL -o EFI-install/EFI/OC/Drivers/HfsPlus.efi \\"
+print "    curl -fL -o EFI-stage1/OC/Drivers/HfsPlus.efi \\"
 print "      https://raw.githubusercontent.com/acidanthera/OcBinaryData/master/Drivers/HfsPlus.efi"
-print "    cp EFI-install/EFI/OC/Drivers/HfsPlus.efi EFI-accel/EFI/OC/Drivers/HfsPlus.efi"
+print "    cp EFI-stage1/OC/Drivers/HfsPlus.efi EFI-PostInstall/OC/Drivers/HfsPlus.efi"
 print "Without it OpenCore cannot see a createinstallmedia USB."
