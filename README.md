@@ -32,7 +32,7 @@ different ACPI, input, audio and firmware behaviour.
 | **Keyboard, TrackPoint** | ✅ VoodooPS2 |
 | **Battery** | ✅ needs `ECEnabler` |
 | **USB, NVMe** | ✅ |
-| **Webcam** | likely fine — a plain UVC device (`5986:2145`), unlike the XPS's IPO6 sensor. Not specifically tested |
+| **Webcam** | ✅ works in PhotoBooth |
 | **Bluetooth** | ✅ AX211 via IntelBluetoothFirmware + BlueToolFixup |
 | **Brightness range** | ⚠️ slider may cap around 50% — `ngreenblmax` is unmeasured on this panel |
 | **Internal mic array** | ❌ DMIC behind the audio DSP, not on the codec. Out of scope |
