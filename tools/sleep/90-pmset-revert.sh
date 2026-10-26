@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Restores the macOS laptop defaults that were in place before 10-pmset-safe.sh (sleep on, hibernatemode 3, standby).
-# Note: with these settings closing the lid starts a real system sleep, which this laptop cannot resume from.
+# Note: this restores hibernatemode 3 + standby 1. On the X1 Carbon Gen 11 sleep itself resumes, but
+# OpenCore here is HibernateMode = None, so once standbydelay elapses the machine cold-boots and the
+# session is lost -- see tools/sleep/10-pmset-s3.sh. This script is for going back to stock, not a fix.
 # Run with sudo. Remove the lid agent separately: zsh tools/sleep/install-xe-lid.sh --remove
 set -e
 [[ $EUID -eq 0 ]] || { echo "run: sudo zsh $0"; exit 1; }

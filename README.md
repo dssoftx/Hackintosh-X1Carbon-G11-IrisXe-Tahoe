@@ -33,10 +33,11 @@ different ACPI, input, audio and firmware behaviour.
 | **Battery** | ✅ needs `ECEnabler` |
 | **USB, NVMe** | ✅ |
 | **Webcam** | likely fine — a plain UVC device (`5986:2145`), unlike the XPS's IPO6 sensor. Not specifically tested |
-| **Bluetooth** | ❌ not enabled in this EFI (the kexts are available; just untested here) |
+| **Bluetooth** | ✅ AX211 via IntelBluetoothFirmware + BlueToolFixup |
 | **Brightness range** | ⚠️ slider may cap around 50% — `ngreenblmax` is unmeasured on this panel |
 | **Internal mic array** | ❌ DMIC behind the audio DSP, not on the codec. Out of scope |
-| **External displays, sleep, fingerprint** | ❌ out of scope, deliberately untouched |
+| **Sleep** | ✅ suspends and resumes, lid close included, with acceleration and peripherals intact — **read [Sleep](#sleep) before leaving it asleep for hours** |
+| **External displays, fingerprint** | ❌ out of scope, deliberately untouched |
 
 ---
 
@@ -124,7 +125,7 @@ Two ready-made EFIs ship in [`dist/`](dist/):
 | | |
 |---|---|
 | `dist/EFI-stage1` | **to install macOS, and to build the stack afterwards** — 9 kexts: the configuration that first reached the Tahoe installer, plus `AirportItlwm`. It needs Wi-Fi because `install.sh` downloads Xcode CLT and Apple's driver bundles |
-| `dist/EFI-PostInstall` | **after `install.sh` has run** — 19 kexts: NootedGreen (Metal), AppleALC, AirportItlwm, VoodooI2C, battery, the two ACPI fixes |
+| `dist/EFI-PostInstall` | **after `install.sh` has run** — 22 kexts: NootedGreen (Metal), AppleALC, AirportItlwm, Bluetooth, VoodooI2C, battery, the two ACPI fixes |
 
 Each has a single `config.plist`, so there is nothing to rename and no way to boot the wrong one.
 `EFI-stage1` is deliberately not just `EFI-PostInstall` with NootedGreen off: it is the minimal
@@ -138,10 +139,12 @@ cd dist
 zsh set-smbios.sh <SERIAL> <MLB>        # writes your SMBIOS into BOTH EFIs
 ```
 
-> ⚠️ **Set your own SMBIOS.** Both EFIs ship with it **blank**. Serial, MLB and UUID identify the machine
-> to Apple; if several people boot the same values, iCloud and iMessage break for all of them and Apple
-> IDs can get flagged. Generate yours with `macserial -m MacBookPro16,2 -g -n 1` from the OpenCore
-> release. Never publish them, never reuse someone else's.
+> ⚠️ **Replace the SMBIOS before signing in to anything.** Both EFIs ship with a **placeholder** set so
+> they boot as downloaded — generated values, not anyone's real machine, but the *same* values for
+> everyone who downloads this repo. Serial, MLB and UUID are how Apple identifies the machine: if
+> several people boot one set, iCloud and iMessage break for all of them and Apple IDs can get flagged.
+> Generate yours with `macserial -m MacBookPro16,2 -g -n 1` from the OpenCore release. Never publish
+> them, never reuse someone else's.
 
 And fetch `HfsPlus.efi`, which is **not** in this repository (Apple-derived binary) but is needed for
 OpenCore to see a `createinstallmedia` USB. It ships **disabled** on purpose — `HaltLevel` is
@@ -251,6 +254,35 @@ management. What is not known is which interrupt the firmware handed us — `TPD
 on `\_SB.GPI0` when the firmware variable `TPDM` is zero, and a plain APIC line otherwise. One root
 kernel log would say which, and from there the fix is either forcing the GpioInt path (scoped with
 OpenCore's `Base`) or looking at `SHPO`/HOSTSW_OWN pin ownership. Patches welcome.
+
+### Sleep
+
+This is the one place where the X1 Carbon Gen 11 is simply better off than the XPS 13 Plus this port
+came from. That laptop is Modern Standby only — `_S3` is hidden in its DSDT — and a real sleep never
+resumed on it, so upstream ships `tools/sleep/10-pmset-safe.sh`, which disables system sleep outright.
+
+Our DSDT has `Name (_S3, Package (0x04))`, and sleep works: idle sleep and lid close both suspend and
+resume, with Metal acceleration, Wi-Fi, trackpad and audio all alive afterwards. **Do not run upstream's
+`10-pmset-safe.sh` on this machine** — it would turn off something that works.
+
+There is one trap, and it is in the stock macOS defaults rather than in anything this EFI does.
+A `MacBookPro16,2` SMBIOS comes up with `hibernatemode 3` and `standby 1`: macOS writes
+`/var/vm/sleepimage` on every sleep and, after `standbydelaylow` (3 hours), cuts power to RAM expecting
+the bootloader to resume from that image. `Misc/Boot/HibernateMode` here is `None`, so OpenCore will not
+— the machine cold-boots instead, the session is gone, and the on-disk state was written assuming a
+resume. Sleeps shorter than the standby delay never reach that path, which is why it is easy to miss.
+
+Run this once, after installing:
+
+```sh
+sudo zsh tools/sleep/10-pmset-s3.sh
+```
+
+It keeps sleep and removes hibernation only — `hibernatemode 0`, `standby 0`, no sleepimage, and Power
+Nap and proximity wake off since nothing here is tested in dark wake. Your current settings are saved to
+`tools/build/` first, and `tools/sleep/90-pmset-revert.sh` restores the stock ones.
+
+Untested: sleep lasting longer than the standby delay with the script applied, and wake-on-LAN.
 
 ---
 

@@ -7,9 +7,11 @@
 #   ./macserial -m MacBookPro16,2 -g -n 1       ->  "SERIAL | MLB"
 # UUID defaults to a fresh uuidgen, ROM to 6 random bytes.
 #
-# WHY YOU MUST DO THIS: the EFIs ship with blank SMBIOS. Serial, MLB and UUID identify the machine to
-# Apple. If several people run the same values, iCloud and iMessage break for all of them and Apple IDs
-# can get flagged. These are yours; never publish them.
+# WHY YOU MUST DO THIS: the EFIs ship with a PLACEHOLDER SMBIOS so they boot out of the box. It is a
+# generated set, not anyone's machine -- but it is the same set for everyone who downloads this repo.
+# Serial, MLB and UUID identify the machine to Apple: if several people run the same values, iCloud and
+# iMessage break for all of them and Apple IDs can get flagged. Replace it before signing in to
+# anything. Your own values are yours; never publish them.
 set -e
 HERE=${0:A:h}
 SERIAL=${1:?usage: set-smbios.sh <serial> <MLB> [uuid] [rom-hex]}
@@ -41,7 +43,7 @@ done
 
 print
 print "Serial: $SERIAL   MLB: $MLB   UUID: $UUID"
-print "Keep these. Do not publish them, and do not reuse anyone else's."
+print "Keep these. They replaced the shipped placeholder. Do not publish them, and do not reuse anyone else's."
 if [[ -s $HERE/EFI-stage1/OC/Drivers/HfsPlus.efi && -s $HERE/EFI-PostInstall/OC/Drivers/HfsPlus.efi ]]; then
   print
   print "HfsPlus.efi is present in both. Nothing else to do."

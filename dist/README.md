@@ -19,7 +19,10 @@ and `HfsPlus.efi` added, without modifying anything here.
 
 ### 1. Set your own SMBIOS
 
-Both ship with SMBIOS **blank**.
+Both ship with a **placeholder** SMBIOS, so they boot as downloaded. It is a generated set — not
+anyone's real machine — but it is the *same* set for everyone, and serial, MLB and UUID are how Apple
+identifies the machine. If several people boot these values, iCloud and iMessage break for all of them
+and Apple IDs can get flagged. Replace it before you sign in to anything.
 
 ```sh
 zsh set-smbios.sh <SystemSerialNumber> <MLB>
